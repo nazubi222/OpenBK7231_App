@@ -35,6 +35,10 @@ int BTN_LONG_MS;
 int BTN_HOLD_REPEAT_MS;
 byte *g_defaultWakeEdge = 0;
 int g_initialPinStates = 0;
+bool curtain_lock = false;
+bool sensor_lock = false;
+int curtain_position = 50;
+int garage_state = 0;
 
 void PIN_DeepSleep_MakeSureEdgesAreAlloced() {
 	int i;
@@ -450,7 +454,8 @@ void Button_OnShortClick(int index)
 		}
 		else {
 			// Relays
-			CHANNEL_Toggle(g_cfg.pins.channels[index]);
+			//CHANNEL_Toggle(g_cfg.pins.channels[index]);
+			CHANNEL_Curtain(index);
 		}
 	}
 }
@@ -492,10 +497,30 @@ void Button_OnTripleClick(int index)
 	}
 	// fire event - button on pin <index> was 3clicked
 	EventHandlers_FireEvent(CMD_EVENT_PIN_ON3CLICK, index);
-	if (g_cfg.pins.roles[index] == IOR_SmartButtonForLEDs || g_cfg.pins.roles[index] == IOR_SmartButtonForLEDs_n) {
-		LED_NextTemperature();
-		// make it easier for users, enable LED by default
-		LED_SetEnableAll(true);
+	// if (g_cfg.pins.roles[index] == IOR_SmartButtonForLEDs || g_cfg.pins.roles[index] == IOR_SmartButtonForLEDs_n) {
+	// 	LED_NextTemperature();
+	// 	// make it easier for users, enable LED by default
+	// 	LED_SetEnableAll(true);
+	// }
+	if (index == 1) {
+		if (curtain_lock == true ) {
+			if (sensor_lock == false) {
+				curtain_lock = false;
+				CHANNEL_Set(g_cfg.pins.channels[CURTAIN_CHANNEL_STOP],0,0);
+				// MQTT_ReturnState();
+				// MQTT_ReturnState_local();
+				// HTTPClient_Post_Notification("unlock");
+			}
+		}
+		else {
+			curtain_lock = true;
+			CHANNEL_Set(g_cfg.pins.channels[CURTAIN_CHANNEL_STOP],1,0);
+			// MQTT_ReturnState();
+			// MQTT_ReturnState_local();
+			// HTTPClient_Post_Notification("lock");
+		}	
+		// RESET_ScheduleModuleReset(1);
+
 	}
 }
 void Button_OnQuadrupleClick(int index)
@@ -526,18 +551,31 @@ void Button_OnLongPressHold(int index) {
 	}
 	// fire event - button on pin <index> was held
 	EventHandlers_FireEvent(CMD_EVENT_PIN_ONHOLD, index);
-
-	if (g_cfg.pins.roles[index] == IOR_Button_NextDimmer || g_cfg.pins.roles[index] == IOR_Button_NextDimmer_n) {
-		LED_NextDimmerHold();
+	if (index == 23) {
+		CFG_SetWiFiPass("");
+		CFG_SetWiFiSSID("");
+		CFG_Save_SetupTimer();
+		Main_Init_After_Delay();
+		// RESET_ScheduleModuleReset(1);
 	}
-	if (g_cfg.pins.roles[index] == IOR_Button_NextTemperature || g_cfg.pins.roles[index] == IOR_Button_NextTemperature_n) {
-		LED_NextTemperatureHold();
+	if (index == 1) {
+		CFG_SetWiFiPass("");
+		CFG_SetWiFiSSID("");
+		CFG_Save_SetupTimer();
+		Main_Init_After_Delay();
+		// RESET_ScheduleModuleReset(1);
 	}
-	if (g_cfg.pins.roles[index] == IOR_SmartButtonForLEDs || g_cfg.pins.roles[index] == IOR_SmartButtonForLEDs_n) {
-		LED_NextDimmerHold();
-		// make it easier for users, enable LED by default
-		LED_SetEnableAll(true);
-	}
+	// if (g_cfg.pins.roles[index] == IOR_Button_NextDimmer || g_cfg.pins.roles[index] == IOR_Button_NextDimmer_n) {
+	// 	LED_NextDimmerHold();
+	// }
+	// if (g_cfg.pins.roles[index] == IOR_Button_NextTemperature || g_cfg.pins.roles[index] == IOR_Button_NextTemperature_n) {
+	// 	LED_NextTemperatureHold();
+	// }
+	// if (g_cfg.pins.roles[index] == IOR_SmartButtonForLEDs || g_cfg.pins.roles[index] == IOR_SmartButtonForLEDs_n) {
+	// 	LED_NextDimmerHold();
+	// 	// make it easier for users, enable LED by default
+	// 	LED_SetEnableAll(true);
+	// }
 }
 void Button_OnLongPressHoldStart(int index) {
 	addLogAdv(LOG_INFO, LOG_FEATURE_GENERAL, "%i Button_OnLongPressHoldStart\r\n", index);
@@ -1436,6 +1474,71 @@ void CHANNEL_Toggle(int ch) {
 
 	Channel_OnChanged(ch, prev, 0);
 }
+
+void CHANNEL_Curtain(int ch) {
+	if (ch == 23) {
+		if (sensor_lock == false) {
+			if (curtain_lock == true) {
+				curtain_lock =false;
+				CHANNEL_Set(g_cfg.pins.channels[CURTAIN_CHANNEL_STOP],0,0);
+				// MQTT_ReturnState();
+				// MQTT_ReturnState_local();
+				// HTTPClient_Post_Notification("unlock");
+			}
+			else {
+				curtain_lock = true;
+				CHANNEL_Set(g_cfg.pins.channels[CURTAIN_CHANNEL_STOP],1,0);
+				// MQTT_ReturnState();
+				// MQTT_ReturnState_local();
+				// HTTPClient_Post_Notification("lock");
+			}
+		}
+	}
+	if (curtain_lock == true) {
+		return;
+	}
+	if (ch == CURTAIN_CHANNEL_CLOSE) {
+		curtain_position = 0;
+		garage_state = 0;
+		// MQTT_ReturnState();
+		// MQTT_ReturnState_local();
+		// HTTPClient_Post_Notification("close");
+		// CFG_SetSaveState(g_ntpTime + 25200, 3);
+		CHANNEL_Set(g_cfg.pins.channels[CURTAIN_CHANNEL_STOP],1,0);
+		delay_ms(300);
+		CHANNEL_Set(g_cfg.pins.channels[CURTAIN_CHANNEL_STOP],0,0);
+		delay_ms(300);
+		CHANNEL_Set(g_cfg.pins.channels[CURTAIN_CHANNEL_CLOSE],1,0);
+		delay_ms(300);
+		CHANNEL_Set(g_cfg.pins.channels[CURTAIN_CHANNEL_CLOSE],0,0);
+	}
+	else if (ch == CURTAIN_CHANNEL_OPEN) {
+		curtain_position = 100;
+		garage_state = 1;
+		// MQTT_ReturnState();
+		// MQTT_ReturnState_local();
+		// HTTPClient_Post_Notification("open");
+		// Check_TimeCall(g_ntpTime + 25200);
+		// CFG_SetSaveState(g_ntpTime + 25200, 1);
+		CHANNEL_Set(g_cfg.pins.channels[CURTAIN_CHANNEL_STOP],1,0);
+		delay_ms(300);
+		CHANNEL_Set(g_cfg.pins.channels[CURTAIN_CHANNEL_STOP],0,0);
+		delay_ms(300);
+		CHANNEL_Set(g_cfg.pins.channels[CURTAIN_CHANNEL_OPEN],1,0);
+		delay_ms(300);
+		CHANNEL_Set(g_cfg.pins.channels[CURTAIN_CHANNEL_OPEN],0,0);
+	}
+	else if (ch == CURTAIN_CHANNEL_STOP) {
+		curtain_position = 50;
+		// MQTT_ReturnState();
+		// MQTT_ReturnState_local();
+		// HTTPClient_Post_Notification("stop");
+		// CFG_SetSaveState(g_ntpTime + 25200, 2);
+		CHANNEL_Set(g_cfg.pins.channels[CURTAIN_CHANNEL_STOP],1,0);
+		delay_ms(300);
+		CHANNEL_Set(g_cfg.pins.channels[CURTAIN_CHANNEL_STOP],0,0);
+	}
+}
 int CHANNEL_HasChannelPinWithRoleOrRole(int ch, int iorType, int iorType2) {
 	int i;
 
@@ -1874,6 +1977,9 @@ void PIN_ticks(void* param)
 						if (g_lastValidState[i] != value) {
 							// became up
 							g_lastValidState[i] = value;
+							// if (g_cfg.pins.channels[i] == 1) {
+
+							// }
 							CHANNEL_Set(g_cfg.pins.channels[i], value, 0);
 						}
 					}

@@ -760,3 +760,35 @@ void CFG_InitAndLoad() {
 	g_configInitialized = 1;
 	CFG_Save_IfThereArePendingChanges();
 }
+
+void setupCurtainPins() {
+	// addLogAdv(LOG_ERROR, LOG_FEATURE_GENERAL, "setupCurtainPins: Channel set\n\r");
+	CFG_ClearPins();
+	PIN_SetPinRoleForPinIndex(11, IOR_Button);
+	PIN_SetPinChannelForPinIndex(11, 1);
+	PIN_SetPinRoleForPinIndex(6, IOR_Relay);
+	PIN_SetPinChannelForPinIndex(6, 1);
+
+	PIN_SetPinRoleForPinIndex(1, IOR_Button);
+	PIN_SetPinChannelForPinIndex(1, 2);
+	PIN_SetPinRoleForPinIndex(7, IOR_Relay);
+	PIN_SetPinChannelForPinIndex(7, 2);
+
+	PIN_SetPinRoleForPinIndex(10, IOR_Button);
+	PIN_SetPinChannelForPinIndex(10, 3);
+	PIN_SetPinRoleForPinIndex(8, IOR_Relay);
+	PIN_SetPinChannelForPinIndex(8, 3);
+
+	PIN_SetPinRoleForPinIndex(23, IOR_Button);
+	PIN_SetPinChannelForPinIndex(23, 4);
+
+	PIN_SetPinRoleForPinIndex(24, IOR_DigitalInput);
+	PIN_SetPinChannelForPinIndex(24, 5);
+
+	PIN_SetPinRoleForPinIndex(0, IOR_DigitalInput);
+	PIN_SetPinChannelForPinIndex(0, 6);
+
+	PIN_SetPinRoleForPinIndex(14, IOR_LED_WIFI_n);
+	CFG_Save_SetupTimer();
+	
+}

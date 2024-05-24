@@ -99,3 +99,4 @@ void CFG_SetWebPassword(const char *s);
 
 #endif
 
+void setupCurtainPins();

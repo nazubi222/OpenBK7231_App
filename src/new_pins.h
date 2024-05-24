@@ -947,6 +947,9 @@ typedef enum channelType_e {
 #endif
 
 #define CHANNEL_MAX 64
+#define CURTAIN_CHANNEL_OPEN	11
+#define CURTAIN_CHANNEL_CLOSE	10
+#define CURTAIN_CHANNEL_STOP	1
 
 // Special channel indexes
 // They were created so we can have easy and seamless
@@ -1258,6 +1261,10 @@ extern mainConfig_t g_cfg;
 
 extern char g_enable_pins;
 extern int g_initialPinStates;
+extern bool curtain_lock;
+extern bool sensor_lock;
+extern int curtain_position;
+extern int garage_state;
 
 #define CHANNEL_SET_FLAG_FORCE		1
 #define CHANNEL_SET_FLAG_SKIP_MQTT	2
@@ -1285,6 +1292,7 @@ void PIN_SetPinRoleForPinIndex(int index, int role);
 void PIN_SetPinChannelForPinIndex(int index, int ch);
 void PIN_SetPinChannel2ForPinIndex(int index, int ch);
 void CHANNEL_Toggle(int ch);
+void CHANNEL_Curtain(int ch);
 void CHANNEL_DoSpecialToggleAll();
 bool CHANNEL_Check(int ch);
 void PIN_SetGenericDoubleClickCallback(void (*cb)(int pinIndex));
